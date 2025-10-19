@@ -7,7 +7,7 @@
              mc:Ignorable="d"
              d:DesignHeight="900"
              d:DesignWidth="1000"
-             Background="#FF1A1D2E">
+             Background="{DynamicResource PageBackgroundBrush}">
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
@@ -16,8 +16,8 @@
 
         <!-- Book Now Button Style -->
         <Style x:Key="BookNowButton" TargetType="Button">
-            <Setter Property="Background" Value="#FF4F6EFF" />
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryForegroundBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="0,16" />
             <Setter Property="FontSize" Value="16" />
@@ -37,325 +37,380 @@
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#FF5F7EFF" />
+                    <Setter Property="Background" Value="{DynamicResource PrimaryDarkBrush}" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.6" />
+                    <Setter Property="Cursor" Value="Arrow" />
                 </Trigger>
             </Style.Triggers>
         </Style>
     </UserControl.Resources>
 
     <Grid>
-        <ScrollViewer VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled"
-                      Visibility="{Binding HasVehicle, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <Grid Margin="40,30,40,40">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+        <Grid>
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Visibility="{Binding HasVehicle, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Grid Margin="40,30,40,40">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
-                <!-- Hero Image Section -->
-                <Border Grid.Row="0"
-                        Height="400"
-                        CornerRadius="20"
-                        ClipToBounds="True"
-                        Background="#FF252941"
-                        Margin="0,0,0,32">
-                    <Grid>
-                        <Image Source="{Binding SelectedPhotoUrl}"
-                               Stretch="UniformToFill" />
+                    <!-- Hero Image Section -->
+                    <Border Grid.Row="0"
+                            Height="400"
+                            CornerRadius="20"
+                            ClipToBounds="True"
+                            Background="{DynamicResource CardBackgroundBrush}"
+                            Margin="0,0,0,32">
+                        <Grid>
+                            <Image Source="{Binding SelectedPhotoUrl}"
+                                   Stretch="UniformToFill" />
 
-                        <!-- No Photo Placeholder -->
-                        <StackPanel VerticalAlignment="Center"
-                                   HorizontalAlignment="Center">
-                            <StackPanel.Style>
-                                <Style TargetType="StackPanel">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedPhotoUrl}" Value="{x:Null}">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding SelectedPhotoUrl}" Value="">
-                                            <Setter Property="Visibility" Value="Visible" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
-                            <TextBlock Text="&#xEB9F;"
-                                       FontFamily="Segoe MDL2 Assets"
-                                       FontSize="48"
-                                       Foreground="#FF4B5563"
-                                       HorizontalAlignment="Center"
-                                       Margin="0,0,0,12" />
-                            <TextBlock Text="No image available"
-                                       FontSize="16"
-                                       Foreground="#FF6B7280"
-                                       HorizontalAlignment="Center" />
-                        </StackPanel>
-                    </Grid>
-                </Border>
-
-                <!-- Photo Thumbnails -->
-                <ItemsControl ItemsSource="{Binding Photos}"
-                             Grid.Row="0"
-                             VerticalAlignment="Bottom"
-                             Margin="40,-70,40,32">
-                    <ItemsControl.Style>
-                        <Style TargetType="ItemsControl">
-                            <Setter Property="Visibility" Value="Visible" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding Photos.Count}" Value="0">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ItemsControl.Style>
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Width="100"
-                                    Height="75"
-                                    Background="#FF252941"
-                                    CornerRadius="12"
-                                    Margin="0,0,12,0"
-                                    Cursor="Hand"
-                                    BorderThickness="3"
-                                    BorderBrush="Transparent">
-                                <Border.InputBindings>
-                                    <MouseBinding MouseAction="LeftClick" 
-                                                  Command="{Binding DataContext.SelectPhotoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                  CommandParameter="{Binding}" />
-                                </Border.InputBindings>
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Setter Property="BorderBrush" Value="Transparent" />
+                            <!-- No Photo Placeholder -->
+                            <StackPanel VerticalAlignment="Center"
+                                       HorizontalAlignment="Center">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed" />
                                         <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="BorderBrush" Value="#FF4F6EFF" />
-                                            </Trigger>
+                                            <DataTrigger Binding="{Binding SelectedPhotoUrl}" Value="{x:Null}">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding SelectedPhotoUrl}" Value="">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </Border.Style>
-                                <Image Source="{Binding Url}"
-                                       Stretch="UniformToFill"
-                                       ClipToBounds="True" />
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
-                <!-- Content Section -->
-                <Grid Grid.Row="1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="400" />
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Left Side - Vehicle Details -->
-                    <StackPanel Grid.Column="0"
-                               Margin="0,0,40,0">
-                        <!-- Title -->
-                        <!-- Specs Grid -->
-                        <Border Background="#FF252941"
-                                CornerRadius="16"
-                                Padding="28"
-                                >
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-
-                                <!-- Seats -->
-                                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,24">
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                        <TextBlock Text="&#xE7C4;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="18"
-                                                   Foreground="#FF4F6EFF"
-                                                   VerticalAlignment="Center"
-                                                   Margin="0,0,8,0" />
-                                        <TextBlock Text="Seats"
-                                                   FontSize="13"
-                                                   Foreground="#FF9BA3B4"
-                                                   VerticalAlignment="Center" />
-                                    </StackPanel>
-                                    <TextBlock Text="{Binding Vehicle.Seats}"
-                                               FontSize="20"
-                                               FontWeight="SemiBold"
-                                               Foreground="White" />
-                                </StackPanel>
-
-                                <!-- Transmission -->
-                                <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,24">
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                        <TextBlock Text="&#xE7C8;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="18"
-                                                   Foreground="#FF4F6EFF"
-                                                   VerticalAlignment="Center"
-                                                   Margin="0,0,8,0" />
-                                        <TextBlock Text="Transmission"
-                                                   FontSize="13"
-                                                   Foreground="#FF9BA3B4"
-                                                   VerticalAlignment="Center" />
-                                    </StackPanel>
-                                    <TextBlock Text="{Binding Vehicle.TransmissionDisplay}"
-                                               FontSize="20"
-                                               FontWeight="SemiBold"
-                                               Foreground="White" />
-                                </StackPanel>
-
-                                <!-- Fuel Type -->
-                                <StackPanel Grid.Row="1" Grid.Column="0">
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                        <TextBlock Text="&#xE7C7;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="18"
-                                                   Foreground="#FF4F6EFF"
-                                                   VerticalAlignment="Center"
-                                                   Margin="0,0,8,0" />
-                                        <TextBlock Text="Fuel Type"
-                                                   FontSize="13"
-                                                   Foreground="#FF9BA3B4"
-                                                   VerticalAlignment="Center" />
-                                    </StackPanel>
-                                    <TextBlock Text="{Binding Vehicle.FuelDisplay}"
-                                               FontSize="20"
-                                               FontWeight="SemiBold"
-                                               Foreground="White" />
-                                </StackPanel>
-
-                                <!-- Type -->
-                                <StackPanel Grid.Row="1" Grid.Column="1">
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                        <TextBlock Text="&#xE7C5;"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="18"
-                                                   Foreground="#FF4F6EFF"
-                                                   VerticalAlignment="Center"
-                                                   Margin="0,0,8,0" />
-                                        <TextBlock Text="Type"
-                                                   FontSize="13"
-                                                   Foreground="#FF9BA3B4"
-                                                   VerticalAlignment="Center" />
-                                    </StackPanel>
-                                    <TextBlock Text="{Binding Vehicle.CategoryDisplay}"
-                                               FontSize="20"
-                                               FontWeight="SemiBold"
-                                               Foreground="White" />
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-
-                        <!-- Title -->
-                        <TextBlock Text="{Binding Vehicle.DisplayName}"
-                                   FontSize="32"
-                                   FontWeight="Bold"
-                                   Foreground="White"
-                                   Margin="0,0,0,8" />
-                        <TextBlock Text="Description"
-                                   FontSize="20"
-                                   FontWeight="SemiBold"
-                                   Foreground="White"
-                                   />
-
-                        <!-- Subtitle -->
-                        <TextBlock Text="{Binding Vehicle.Subtitle}"
-                                   FontSize="16"
-                                   Foreground="#FF9BA3B4"
-                                   Margin="0,0,0,32" />
-                        <Border Background="#FF252941"
-                                CornerRadius="16"
-                                Padding="28">
-                            <TextBlock Text="{Binding Vehicle.Description}"
-                                       FontSize="15"
-                                       Foreground="#FF9BA3B4"
-                                       TextWrapping="Wrap"
-                                       LineHeight="24" />
-                        </Border>
-
-                        <!-- Description Section -->
-                    </StackPanel>
-
-                    <!-- Right Side - Booking Card -->
-                    <Border Grid.Column="1"
-                            Background="#FF252941"
-                            CornerRadius="20"
-                            Padding="32"
-                            VerticalAlignment="Top">
-                        <StackPanel>
-                            <!-- Price Section -->
-                            <TextBlock Text="Starting at"
-                                       FontSize="14"
-                                       Foreground="#FF9BA3B4"
-                                       Margin="0,0,0,8" />
-
-                            <TextBlock Text="per day"
-                                       FontSize="14"
-                                       Foreground="#FF9BA3B4"
-                                       Margin="0,0,0,24" />
-
-                            <!-- Separator -->
-                            <Border Height="1"
-                                    Background="#FF3A3F5C"
-                                    Margin="0,0,0,24" />
-
-                            <!-- Additional Info -->
-                            <StackPanel Margin="0,0,0,16">
-                                <TextBlock Text="Color"
-                                           FontSize="13"
-                                           Foreground="#FF9BA3B4"
-                                           Margin="0,0,0,6" />
-                                <TextBlock Text="{Binding Vehicle.Color}"
+                                </StackPanel.Style>
+                                <TextBlock Text="&#xEB9F;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="48"
+                                           Foreground="{DynamicResource MutedForegroundBrush}"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,0,0,12" />
+                                <TextBlock Text="{DynamicResource Vehicles_NoPhoto}"
                                            FontSize="16"
-                                           FontWeight="SemiBold"
-                                           Foreground="White" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           HorizontalAlignment="Center" />
                             </StackPanel>
-
-                            <StackPanel Margin="0,0,0,16">
-                                <TextBlock Text="Status"
-                                           FontSize="13"
-                                           Foreground="#FF9BA3B4"
-                                           Margin="0,0,0,6" />
-                            </StackPanel>
-
-                            <StackPanel Margin="0,0,0,24">
-                                <TextBlock Text="Registration"
-                                           FontSize="13"
-                                           Foreground="#FF9BA3B4"
-                                           Margin="0,0,0,6" />
-                                <TextBlock Text="{Binding Vehicle.PlateNumber}"
-                                           FontSize="16"
-                                           FontWeight="SemiBold"
-                                           Foreground="White" />
-                            </StackPanel>
-
-                            <!-- Book Button -->
-                            <Button Content="Book Now"
-                                    Style="{StaticResource BookNowButton}"
-                                    Command="{Binding ReserveCommand}" />
-
-                            <!-- Info Text -->
-                            <TextBlock Text="* Final price may vary based on rental duration and additional services"
-                                       FontSize="11"
-                                       Foreground="#FF6B7280"
-                                       TextWrapping="Wrap"
-                                       TextAlignment="Center"
-                                       Margin="0,16,0,0" />
-                        </StackPanel>
+                        </Grid>
                     </Border>
+
+                    <!-- Photo Thumbnails -->
+                    <ItemsControl ItemsSource="{Binding Photos}"
+                                 Grid.Row="0"
+                                 VerticalAlignment="Bottom"
+                                 Margin="40,-70,40,32">
+                        <ItemsControl.Style>
+                            <Style TargetType="ItemsControl">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Photos.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ItemsControl.Style>
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="100"
+                                        Height="75"
+                                        Background="{DynamicResource CardBackgroundBrush}"
+                                        CornerRadius="12"
+                                        Margin="0,0,12,0"
+                                        Cursor="Hand"
+                                        BorderThickness="3"
+                                        BorderBrush="Transparent">
+                                    <Border.InputBindings>
+                                        <MouseBinding MouseAction="LeftClick"
+                                                      Command="{Binding DataContext.SelectPhotoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                      CommandParameter="{Binding}" />
+                                    </Border.InputBindings>
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="BorderBrush" Value="Transparent" />
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+                                                </Trigger>
+                                                <DataTrigger Binding="{Binding IsPrimary}" Value="True">
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Image Source="{Binding Url}"
+                                           Stretch="UniformToFill"
+                                           ClipToBounds="True" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Content Section -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="400" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left Side - Vehicle Details -->
+                        <StackPanel Grid.Column="0"
+                                   Margin="0,0,40,0"
+                                   Spacing="24">
+                            <!-- Title -->
+                            <TextBlock Text="{Binding Vehicle.DisplayName}"
+                                       FontSize="32"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="{Binding Vehicle.Subtitle}"
+                                       FontSize="16"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                            <!-- Specs Grid -->
+                            <Border Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="16"
+                                    Padding="28">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Seats -->
+                                    <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,24">
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                            <TextBlock Text="&#xE7C4;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="18"
+                                                       Foreground="{DynamicResource PrimaryBrush}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,8,0" />
+                                            <TextBlock Text="{DynamicResource Vehicles_SeatsLabel}"
+                                                       FontSize="13"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Vehicle.Seats}"
+                                                   FontSize="20"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                                    </StackPanel>
+
+                                    <!-- Transmission -->
+                                    <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,24">
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                            <TextBlock Text="&#xE7C8;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="18"
+                                                       Foreground="{DynamicResource PrimaryBrush}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,8,0" />
+                                            <TextBlock Text="{DynamicResource Vehicles_TransmissionLabel}"
+                                                       FontSize="13"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Vehicle.TransmissionDisplay}"
+                                                   FontSize="20"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                                    </StackPanel>
+
+                                    <!-- Fuel Type -->
+                                    <StackPanel Grid.Row="1" Grid.Column="0">
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                            <TextBlock Text="&#xE7C7;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="18"
+                                                       Foreground="{DynamicResource PrimaryBrush}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,8,0" />
+                                            <TextBlock Text="{DynamicResource Vehicles_FuelLabel}"
+                                                       FontSize="13"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Vehicle.FuelDisplay}"
+                                                   FontSize="20"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                                    </StackPanel>
+
+                                    <!-- Type -->
+                                    <StackPanel Grid.Row="1" Grid.Column="1">
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                            <TextBlock Text="&#xE7C5;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="18"
+                                                       Foreground="{DynamicResource PrimaryBrush}"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,8,0" />
+                                            <TextBlock Text="{DynamicResource Vehicles_CategoryLabel}"
+                                                       FontSize="13"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Vehicle.CategoryDisplay}"
+                                                   FontSize="20"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <TextBlock Text="{DynamicResource Vehicles_DescriptionHeading}"
+                                       FontSize="20"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                            <Border Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="16"
+                                    Padding="28">
+                                <TextBlock Text="{Binding Vehicle.Description}"
+                                           FontSize="15"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           TextWrapping="Wrap"
+                                           LineHeight="24" />
+                            </Border>
+
+                            <TextBlock Text="{Binding ErrorMessage}"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource ErrorBrush}"
+                                       TextWrapping="Wrap"
+                                       Visibility="{Binding ErrorMessage, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}" />
+                        </StackPanel>
+
+                        <!-- Right Side - Booking Card -->
+                        <Border Grid.Column="1"
+                                Background="{DynamicResource CardBackgroundBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="20"
+                                Padding="32"
+                                VerticalAlignment="Top">
+                            <StackPanel Spacing="16">
+                                <!-- Price Section -->
+                                <StackPanel>
+                                    <TextBlock Text="{DynamicResource Vehicles_StartingAt}"
+                                               FontSize="14"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <TextBlock Text="{Binding Vehicle.DailyRateDisplay}"
+                                               FontSize="36"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource PrimaryBrush}"
+                                               Margin="0,4,0,0" />
+                                    <TextBlock Text="{DynamicResource Vehicles_PerDay}"
+                                               FontSize="14"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                </StackPanel>
+
+                                <!-- Separator -->
+                                <Border Height="1"
+                                        Background="{DynamicResource BorderBrush}" />
+
+                                <!-- Additional Info -->
+                                <StackPanel>
+                                    <TextBlock Text="{DynamicResource Vehicles_ColorLabel}"
+                                               FontSize="13"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <TextBlock Text="{Binding Vehicle.Color}"
+                                               FontSize="16"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                                </StackPanel>
+
+                                <StackPanel>
+                                    <TextBlock Text="{DynamicResource Vehicles_StatusLabel}"
+                                               FontSize="13"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <TextBlock Text="{Binding Vehicle.Status}"
+                                               FontSize="16"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                                </StackPanel>
+
+                                <StackPanel>
+                                    <TextBlock Text="{DynamicResource Vehicles_RegistrationLabel}"
+                                               FontSize="13"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <TextBlock Text="{Binding Vehicle.PlateNumber}"
+                                               FontSize="16"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                                </StackPanel>
+
+                                <!-- Book Button -->
+                                <Button Content="{DynamicResource Vehicles_BookNow}"
+                                        Style="{StaticResource BookNowButton}"
+                                        Command="{Binding ReserveCommand}" />
+
+                                <!-- Info Text -->
+                                <TextBlock Text="{DynamicResource Vehicles_BookDisclaimer}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           TextWrapping="Wrap"
+                                           TextAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
                 </Grid>
-            </Grid>
-        </ScrollViewer>
+            </ScrollViewer>
 
+            <!-- Placeholder when no vehicle is selected -->
+            <Border Background="{DynamicResource CardBackgroundBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="20"
+                    Padding="48"
+                    Margin="40"
+                    Visibility="{Binding HasVehicle, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                    <TextBlock Text="&#xE7C5;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="48"
+                               Foreground="{DynamicResource MutedForegroundBrush}"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="{DynamicResource Vehicles_SelectPrompt}"
+                               FontSize="18"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center" />
+                </StackPanel>
+            </Border>
 
+            <!-- Loading overlay -->
+            <Border Background="{DynamicResource OverlayBrush}"
+                    Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Border Background="{DynamicResource CardBackgroundBrush}"
+                        CornerRadius="16"
+                        Padding="32"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource Vehicles_Loading}"
+                                   FontSize="18"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

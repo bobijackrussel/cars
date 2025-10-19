@@ -7,7 +7,7 @@
              mc:Ignorable="d"
              d:DesignHeight="900"
              d:DesignWidth="1400"
-             Background="#FF1A1D2E">
+             Background="{DynamicResource PageBackgroundBrush}">
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
@@ -16,9 +16,10 @@
 
         <!-- Vehicle Card Style -->
         <Style x:Key="VehicleCard" TargetType="Border">
-            <Setter Property="Background" Value="#FF252941" />
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="16" />
-            <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Margin" Value="0,0,20,20" />
             <EventSetter Event="MouseEnter" Handler="Card_MouseEnter" />
             <EventSetter Event="MouseLeave" Handler="Card_MouseLeave" />
@@ -26,8 +27,8 @@
 
         <!-- Modern Button Style -->
         <Style x:Key="ModernButton" TargetType="Button">
-            <Setter Property="Background" Value="#FF4F6EFF" />
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="{DynamicResource PrimaryBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryForegroundBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="24,14" />
             <Setter Property="FontSize" Value="15" />
@@ -37,6 +38,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
                                 CornerRadius="10"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center"
@@ -47,18 +49,25 @@
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#FF5F7EFF" />
+                    <Setter Property="Background" Value="{DynamicResource PrimaryDarkBrush}" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.6" />
+                    <Setter Property="Cursor" Value="Arrow" />
                 </Trigger>
             </Style.Triggers>
         </Style>
 
         <!-- Filter Button Style -->
         <Style x:Key="FilterButton" TargetType="Button" BasedOn="{StaticResource ModernButton}">
-            <Setter Property="Background" Value="#FF2A2F47" />
+            <Setter Property="Background" Value="{DynamicResource CardAltBackgroundBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
             <Setter Property="Padding" Value="20,12" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#FF323757" />
+                    <Setter Property="Background" Value="{DynamicResource MutedBackgroundBrush}" />
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -71,20 +80,20 @@
         </Grid.ColumnDefinitions>
 
         <!-- Main Content -->
-        <ScrollViewer Grid.Column="0" 
-                      VerticalScrollBarVisibility="Auto" 
+        <ScrollViewer Grid.Column="0"
+                      VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled"
                       Padding="40,30,40,30">
             <StackPanel>
                 <!-- Header Section -->
                 <StackPanel Margin="0,0,0,32">
-                    <TextBlock Text="Browse Vehicles"
+                    <TextBlock Text="{DynamicResource Vehicles_Title}"
                                FontSize="36"
                                FontWeight="Bold"
-                               Foreground="White" />
-                    <TextBlock Text="Find the perfect car for your journey"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{DynamicResource Vehicles_Subtitle}"
                                FontSize="16"
-                               Foreground="#FF9BA3B4"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                Margin="0,8,0,0" />
                 </StackPanel>
 
@@ -96,7 +105,9 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Search Box -->
-                    <Border Background="#FF252941"
+                    <Border Background="{DynamicResource CardBackgroundBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
                             CornerRadius="12"
                             Height="50"
                             Margin="0,0,16,0">
@@ -110,7 +121,7 @@
                             <TextBlock Text="&#xE721;"
                                        FontFamily="Segoe MDL2 Assets"
                                        FontSize="18"
-                                       Foreground="#FF6B7280"
+                                       Foreground="{DynamicResource MutedForegroundBrush}"
                                        VerticalAlignment="Center"
                                        Margin="20,0,12,0" />
 
@@ -118,10 +129,10 @@
                                      Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                      BorderThickness="0"
                                      Background="Transparent"
-                                     Foreground="White"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
                                      FontSize="15"
                                      VerticalContentAlignment="Center"
-                                     CaretBrush="White">
+                                     CaretBrush="{DynamicResource TextPrimaryBrush}">
                                 <TextBox.Resources>
                                     <Style TargetType="TextBox">
                                         <Setter Property="Template">
@@ -141,8 +152,8 @@
                                                     <Setter.Value>
                                                         <VisualBrush Stretch="None">
                                                             <VisualBrush.Visual>
-                                                                <TextBlock Text="Search by make or model..."
-                                                                           Foreground="#FF6B7280"
+                                                                <TextBlock Text="{DynamicResource Vehicles_SearchPlaceholder}"
+                                                                           Foreground="{DynamicResource MutedForegroundBrush}"
                                                                            FontSize="15" />
                                                             </VisualBrush.Visual>
                                                         </VisualBrush>
@@ -160,7 +171,7 @@
                                     Command="{Binding ClearSearchCommand}"
                                     Background="Transparent"
                                     BorderThickness="0"
-                                    Foreground="#FF6B7280"
+                                    Foreground="{DynamicResource MutedForegroundBrush}"
                                     FontSize="14"
                                     Visibility="{Binding SearchText, Converter={StaticResource StringNullToVisibilityConverter}}"
                                     Margin="0,0,12,0"
@@ -178,7 +189,7 @@
                                        FontSize="16"
                                        VerticalAlignment="Center"
                                        Margin="0,0,8,0" />
-                            <TextBlock Text="Filters"
+                            <TextBlock Text="{DynamicResource Vehicles_Filters}"
                                        VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
@@ -206,7 +217,7 @@
                                         <Border Grid.Row="0"
                                                 CornerRadius="16,16,0,0"
                                                 ClipToBounds="True"
-                                                Background="#FF1E2235">
+                                                Background="{DynamicResource CardAltBackgroundBrush}">
                                             <Grid>
                                                 <Image Source="{Binding PrimaryPhotoUrl}"
                                                        Stretch="UniformToFill"
@@ -219,30 +230,32 @@
                                                     <TextBlock Text="&#xEB9F;"
                                                                FontFamily="Segoe MDL2 Assets"
                                                                FontSize="32"
-                                                               Foreground="#FF4B5563"
+                                                               Foreground="{DynamicResource MutedForegroundBrush}"
                                                                HorizontalAlignment="Center"
                                                                Margin="0,0,0,8" />
-                                                    <TextBlock Text="No image"
+                                                    <TextBlock Text="{DynamicResource Vehicles_NoPhoto}"
                                                                FontSize="12"
-                                                               Foreground="#FF6B7280"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}"
                                                                HorizontalAlignment="Center" />
                                                 </StackPanel>
                                             </Grid>
                                         </Border>
 
                                         <!-- Vehicle Info -->
-                                        <StackPanel Grid.Row="1">
+                                        <StackPanel Grid.Row="1"
+                                                    Margin="20"
+                                                    Orientation="Vertical"
+                                                    Spacing="8">
                                             <!-- Title and Subtitle -->
                                             <TextBlock Text="{Binding DisplayName}"
                                                        FontSize="18"
                                                        FontWeight="SemiBold"
-                                                       Foreground="White"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                                        TextTrimming="CharacterEllipsis" />
 
                                             <TextBlock Text="{Binding Subtitle}"
                                                        FontSize="13"
-                                                       Foreground="#FF9BA3B4"
-                                                       Margin="0,4,0,0"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
                                                        TextTrimming="CharacterEllipsis" />
 
                                             <!-- Icons Row -->
@@ -258,12 +271,17 @@
                                                     <TextBlock Text="&#xE7C4;"
                                                                FontFamily="Segoe MDL2 Assets"
                                                                FontSize="14"
-                                                               Foreground="#FF6B7280"
+                                                               Foreground="{DynamicResource MutedForegroundBrush}"
                                                                VerticalAlignment="Center"
                                                                Margin="0,0,4,0" />
                                                     <TextBlock Text="{Binding Seats}"
                                                                FontSize="13"
-                                                               Foreground="#FF9BA3B4"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="0,0,4,0" />
+                                                    <TextBlock Text="{DynamicResource Vehicles_SeatsLabel}"
+                                                               FontSize="13"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}"
                                                                VerticalAlignment="Center" />
                                                 </StackPanel>
 
@@ -272,12 +290,12 @@
                                                     <TextBlock Text="&#xE7C8;"
                                                                FontFamily="Segoe MDL2 Assets"
                                                                FontSize="14"
-                                                               Foreground="#FF6B7280"
+                                                               Foreground="{DynamicResource MutedForegroundBrush}"
                                                                VerticalAlignment="Center"
                                                                Margin="0,0,4,0" />
                                                     <TextBlock Text="{Binding TransmissionDisplay}"
                                                                FontSize="13"
-                                                               Foreground="#FF9BA3B4"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}"
                                                                VerticalAlignment="Center" />
                                                 </StackPanel>
 
@@ -286,12 +304,12 @@
                                                     <TextBlock Text="&#xE7C7;"
                                                                FontFamily="Segoe MDL2 Assets"
                                                                FontSize="14"
-                                                               Foreground="#FF6B7280"
+                                                               Foreground="{DynamicResource MutedForegroundBrush}"
                                                                VerticalAlignment="Center"
                                                                Margin="0,0,4,0" />
                                                     <TextBlock Text="{Binding FuelDisplay}"
                                                                FontSize="13"
-                                                               Foreground="#FF9BA3B4"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}"
                                                                VerticalAlignment="Center" />
                                                 </StackPanel>
                                             </Grid>
@@ -308,18 +326,18 @@
                                                     <TextBlock Text="{Binding DailyRateDisplay}"
                                                                FontSize="24"
                                                                FontWeight="Bold"
-                                                               Foreground="#FF4F6EFF"
+                                                               Foreground="{DynamicResource PrimaryBrush}"
                                                                VerticalAlignment="Bottom" />
-                                                    <TextBlock Text="per day"
+                                                    <TextBlock Text="{DynamicResource Vehicles_PerDay}"
                                                                FontSize="12"
-                                                               Foreground="#FF6B7280"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}"
                                                                VerticalAlignment="Bottom"
                                                                Margin="6,0,0,4" />
                                                 </StackPanel>
 
                                                 <!-- View Details Button -->
                                                 <Button Grid.Row="1"
-                                                        Content="View Details"
+                                                        Content="{DynamicResource Vehicles_ViewDetails}"
                                                         Style="{StaticResource ModernButton}"
                                                         HorizontalAlignment="Stretch"
                                                         Command="{Binding DataContext.SelectVehicleCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
@@ -333,18 +351,18 @@
                     </ItemsControl>
 
                     <!-- Loading Indicator -->
-                    <Border Background="#DD1A1D2E"
+                    <Border Background="{DynamicResource OverlayBrush}"
                             Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"
                             CornerRadius="16">
-                        <Border Background="#FF252941"
+                        <Border Background="{DynamicResource CardBackgroundBrush}"
                                 CornerRadius="16"
                                 Padding="40"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center">
                             <StackPanel>
-                                <TextBlock Text="Loading vehicles..."
+                                <TextBlock Text="{DynamicResource Vehicles_Loading}"
                                            FontSize="18"
-                                           Foreground="White"
+                                           Foreground="{DynamicResource TextPrimaryBrush}"
                                            HorizontalAlignment="Center" />
                             </StackPanel>
                         </Border>
@@ -372,17 +390,17 @@
                         <TextBlock Text="&#xE7C5;"
                                    FontFamily="Segoe MDL2 Assets"
                                    FontSize="48"
-                                   Foreground="#FF4B5563"
+                                   Foreground="{DynamicResource MutedForegroundBrush}"
                                    HorizontalAlignment="Center"
                                    Margin="0,0,0,16" />
-                        <TextBlock Text="No vehicles found"
+                        <TextBlock Text="{DynamicResource Vehicles_Empty_Title}"
                                    FontSize="20"
                                    FontWeight="SemiBold"
-                                   Foreground="White"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
                                    HorizontalAlignment="Center" />
-                        <TextBlock Text="Try adjusting your search or filters"
+                        <TextBlock Text="{DynamicResource Vehicles_Empty_Description}"
                                    FontSize="14"
-                                   Foreground="#FF6B7280"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    HorizontalAlignment="Center"
                                    Margin="0,8,0,0" />
                     </StackPanel>
@@ -393,7 +411,9 @@
         <!-- Filter Sidebar (Initially Hidden) -->
         <Border x:Name="FilterSidebar"
                 Grid.Column="1"
-                Background="#FF1E2235"
+                Background="{DynamicResource CardAltBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,1,0"
                 Width="340"
                 Visibility="Collapsed">
             <Grid Margin="30">
@@ -404,17 +424,17 @@
 
                 <!-- Header -->
                 <Grid Grid.Row="0" Margin="0,0,0,24">
-                    <TextBlock Text="Filter Vehicles"
+                    <TextBlock Text="{DynamicResource Vehicles_Filter_Header}"
                                FontSize="22"
                                FontWeight="Bold"
-                               Foreground="White"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
                                VerticalAlignment="Center" />
                     <Button Content="&#xE711;"
                             FontFamily="Segoe MDL2 Assets"
                             HorizontalAlignment="Right"
                             Background="Transparent"
                             BorderThickness="0"
-                            Foreground="#FF9BA3B4"
+                            Foreground="{DynamicResource MutedForegroundBrush}"
                             FontSize="16"
                             Cursor="Hand"
                             Click="CloseFilters_Click" />
@@ -424,63 +444,67 @@
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
                         <!-- Vehicle Type -->
-                        <TextBlock Text="Vehicle Type"
+                        <TextBlock Text="{DynamicResource Vehicles_Filter_VehicleType}"
                                    FontSize="14"
                                    FontWeight="SemiBold"
-                                   Foreground="#FF9BA3B4"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    Margin="0,0,0,12" />
                         <ComboBox ItemsSource="{Binding VehicleTypes}"
                                   SelectedItem="{Binding SelectedVehicleType, Mode=TwoWay}"
-                                  Background="#FF252941"
-                                  Foreground="White"
-                                  BorderThickness="0"
+                                  Background="{DynamicResource CardBackgroundBrush}"
+                                  Foreground="{DynamicResource TextPrimaryBrush}"
+                                  BorderBrush="{DynamicResource BorderBrush}"
+                                  BorderThickness="1"
                                   Padding="16,12"
                                   FontSize="14"
                                   Margin="0,0,0,24" />
 
                         <!-- Transmission -->
-                        <TextBlock Text="Transmission"
+                        <TextBlock Text="{DynamicResource Vehicles_Filter_Transmission}"
                                    FontSize="14"
                                    FontWeight="SemiBold"
-                                   Foreground="#FF9BA3B4"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    Margin="0,0,0,12" />
                         <ComboBox ItemsSource="{Binding TransmissionOptions}"
                                   SelectedItem="{Binding SelectedTransmission, Mode=TwoWay}"
-                                  Background="#FF252941"
-                                  Foreground="White"
-                                  BorderThickness="0"
+                                  Background="{DynamicResource CardBackgroundBrush}"
+                                  Foreground="{DynamicResource TextPrimaryBrush}"
+                                  BorderBrush="{DynamicResource BorderBrush}"
+                                  BorderThickness="1"
                                   Padding="16,12"
                                   FontSize="14"
                                   Margin="0,0,0,24" />
 
                         <!-- Price Range -->
-                        <TextBlock Text="Price Range (per day)"
+                        <TextBlock Text="{DynamicResource Vehicles_Filter_PriceRange}"
                                    FontSize="14"
                                    FontWeight="SemiBold"
-                                   Foreground="#FF9BA3B4"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    Margin="0,0,0,12" />
                         <ComboBox ItemsSource="{Binding PriceRanges}"
                                   SelectedItem="{Binding SelectedPriceRange, Mode=TwoWay}"
                                   DisplayMemberPath="DisplayName"
-                                  Background="#FF252941"
-                                  Foreground="White"
-                                  BorderThickness="0"
+                                  Background="{DynamicResource CardBackgroundBrush}"
+                                  Foreground="{DynamicResource TextPrimaryBrush}"
+                                  BorderBrush="{DynamicResource BorderBrush}"
+                                  BorderThickness="1"
                                   Padding="16,12"
                                   FontSize="14"
                                   Margin="0,0,0,24" />
 
                         <!-- Sort By -->
-                        <TextBlock Text="Sort By"
+                        <TextBlock Text="{DynamicResource Vehicles_Filter_SortBy}"
                                    FontSize="14"
                                    FontWeight="SemiBold"
-                                   Foreground="#FF9BA3B4"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    Margin="0,0,0,12" />
                         <ComboBox ItemsSource="{Binding SortOptions}"
                                   SelectedItem="{Binding SelectedSortOption, Mode=TwoWay}"
                                   DisplayMemberPath="DisplayName"
-                                  Background="#FF252941"
-                                  Foreground="White"
-                                  BorderThickness="0"
+                                  Background="{DynamicResource CardBackgroundBrush}"
+                                  Foreground="{DynamicResource TextPrimaryBrush}"
+                                  BorderBrush="{DynamicResource BorderBrush}"
+                                  BorderThickness="1"
                                   Padding="16,12"
                                   FontSize="14" />
                     </StackPanel>

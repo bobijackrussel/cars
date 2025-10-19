@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="CarRentalManagment.Views.VehiclesView"
+<UserControl x:Class="CarRentalManagment.Views.VehiclesView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -7,20 +7,20 @@
              mc:Ignorable="d"
              d:DesignHeight="900"
              d:DesignWidth="1600"
-             Background="#FF1A1D2E">
+             Background="{DynamicResource PageBackgroundBrush}">
 
-    <!-- Main container showing just the vehicle list -->
-    <views:VehicleListView DataContext="{Binding VehicleList}" />
-
-    <!-- Alternative: If you want to show both list and details side-by-side, use this instead:
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*" />
             <ColumnDefinition Width="3*" />
         </Grid.ColumnDefinitions>
-        
-        <views:VehicleListView Grid.Column="0" DataContext="{Binding VehicleList}" />
-        <views:VehicleDetailsView Grid.Column="1" DataContext="{Binding VehicleDetails}" />
+
+        <views:VehicleListView Grid.Column="0"
+                               DataContext="{Binding VehicleList}" />
+        <Border Grid.Column="1"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1,0,0,0">
+            <views:VehicleDetailsView DataContext="{Binding VehicleDetails}" />
+        </Border>
     </Grid>
-    -->
 </UserControl>
