@@ -1,0 +1,552 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Globalization;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Data;
+using System.Windows.Threading;
+using System.Windows.Input;
+using CarRentalManagment.Models;
+using CarRentalManagment.Services;
+using CarRentalManagment.Utilities.Commands;
+using CarRentalManagment.Utilities.SampleData;
+using Microsoft.Extensions.Logging;
+
+namespace CarRentalManagment.ViewModels
+{
+    public class VehicleListViewModel : BaseViewModel
+    {
+        private readonly IVehicleService _vehicleService;
+        private readonly IVehiclePhotoService _vehiclePhotoService;
+        private readonly ILogger<VehicleListViewModel> _logger;
+
+        private const string AllTypesOption = "All Types";
+        private const string AllTransmissionsOption = "All Transmissions";
+        private const string AllPricesOption = "All Prices";
+
+        private readonly ICollectionView _vehiclesView;
+        private readonly RelayCommand _refreshCommand;
+        private readonly RelayCommand _clearSearchCommand;
+        private readonly RelayCommand _selectVehicleCommand;
+
+        private VehicleCardViewModel? _selectedVehicle;
+        private string _searchText = string.Empty;
+        private VehicleSortOption? _selectedSortOption;
+        private string _selectedVehicleType = AllTypesOption;
+        private string _selectedTransmission = AllTransmissionsOption;
+        private PriceRangeOption? _selectedPriceRange;
+        private bool _isLoading;
+        private string? _errorMessage;
+        private CancellationTokenSource? _loadingCts;
+
+        public VehicleListViewModel(
+            IVehicleService vehicleService,
+            IVehiclePhotoService vehiclePhotoService,
+            ILogger<VehicleListViewModel> logger)
+        {
+            _vehicleService = vehicleService;
+            _vehiclePhotoService = vehiclePhotoService;
+            _logger = logger;
+
+            Vehicles = new ObservableCollection<VehicleCardViewModel>();
+            _vehiclesView = CollectionViewSource.GetDefaultView(Vehicles);
+            _vehiclesView.Filter = FilterVehicles;
+            System.Diagnostics.Debug.WriteLine("VehicleListViewModel constructor - Vehicles collection initialized");
+
+            SortOptions = new ObservableCollection<VehicleSortOption>
+            {
+                new("Recommended", new SortDescription(nameof(VehicleCardViewModel.DisplayName), ListSortDirection.Ascending)),
+                new("Daily Rate (Low to High)", new SortDescription(nameof(VehicleCardViewModel.DailyRate), ListSortDirection.Ascending)),
+                new("Daily Rate (High to Low)", new SortDescription(nameof(VehicleCardViewModel.DailyRate), ListSortDirection.Descending)),
+                new("Newest Added", new SortDescription(nameof(VehicleCardViewModel.CreatedAt), ListSortDirection.Descending))
+            };
+
+            _selectedSortOption = SortOptions.FirstOrDefault();
+
+            VehicleTypes.Add(AllTypesOption);
+            TransmissionOptions.Add(AllTransmissionsOption);
+
+            PriceRanges.Add(new PriceRangeOption(AllPricesOption, 0m, null, isDefault: true));
+            PriceRanges.Add(new PriceRangeOption("$0 - $50", 0m, 50m));
+            PriceRanges.Add(new PriceRangeOption("$51 - $100", 51m, 100m));
+            PriceRanges.Add(new PriceRangeOption("$101 - $200", 101m, 200m));
+            PriceRanges.Add(new PriceRangeOption("$201+", 201m, null));
+
+            _selectedVehicleType = AllTypesOption;
+            _selectedTransmission = AllTransmissionsOption;
+            SelectedPriceRange = PriceRanges.FirstOrDefault();
+
+            _refreshCommand = new RelayCommand(async _ => await LoadVehiclesAsync(), _ => !IsLoading);
+            _clearSearchCommand = new RelayCommand(_ => SearchText = string.Empty, _ => !IsLoading && !string.IsNullOrWhiteSpace(SearchText));
+            _selectVehicleCommand = new RelayCommand(
+                parameter =>
+                {
+                    if (parameter is VehicleCardViewModel card)
+                    {
+                        SelectedVehicle = card;
+                    }
+                },
+                parameter => parameter is VehicleCardViewModel);
+        }
+
+        public ObservableCollection<VehicleCardViewModel> Vehicles { get; }
+
+        public ICollectionView VehiclesView => _vehiclesView;
+
+        public ObservableCollection<VehicleSortOption> SortOptions { get; }
+
+        public ObservableCollection<string> VehicleTypes { get; } = new();
+
+        public ObservableCollection<string> TransmissionOptions { get; } = new();
+
+        public ObservableCollection<PriceRangeOption> PriceRanges { get; } = new();
+
+        public VehicleSortOption? SelectedSortOption
+        {
+            get => _selectedSortOption;
+            set
+            {
+                if (SetProperty(ref _selectedSortOption, value))
+                {
+                    ApplySortDescriptions();
+                }
+            }
+        }
+
+        public string SelectedVehicleType
+        {
+            get => _selectedVehicleType;
+            set
+            {
+                if (SetProperty(ref _selectedVehicleType, value))
+                {
+                    _vehiclesView.Refresh();
+                }
+            }
+        }
+
+        public string SelectedTransmission
+        {
+            get => _selectedTransmission;
+            set
+            {
+                if (SetProperty(ref _selectedTransmission, value))
+                {
+                    _vehiclesView.Refresh();
+                }
+            }
+        }
+
+        public PriceRangeOption? SelectedPriceRange
+        {
+            get => _selectedPriceRange;
+            set
+            {
+                if (SetProperty(ref _selectedPriceRange, value))
+                {
+                    _vehiclesView.Refresh();
+                }
+            }
+        }
+
+        public VehicleCardViewModel? SelectedVehicle
+        {
+            get => _selectedVehicle;
+            set
+            {
+                if (SetProperty(ref _selectedVehicle, value))
+                {
+                    SelectedVehicleChanged?.Invoke(this, value);
+                }
+            }
+        }
+
+        public string SearchText
+        {
+            get => _searchText;
+            set
+            {
+                if (SetProperty(ref _searchText, value))
+                {
+                    _vehiclesView.Refresh();
+                    _clearSearchCommand.RaiseCanExecuteChanged();
+                }
+            }
+        }
+
+        public bool IsLoading
+        {
+            get => _isLoading;
+            private set
+            {
+                if (SetProperty(ref _isLoading, value))
+                {
+                    _refreshCommand.RaiseCanExecuteChanged();
+                    _clearSearchCommand.RaiseCanExecuteChanged();
+                }
+            }
+        }
+
+        public string? ErrorMessage
+        {
+            get => _errorMessage;
+            private set => SetProperty(ref _errorMessage, value);
+        }
+
+        public ICommand RefreshCommand => _refreshCommand;
+
+        public ICommand ClearSearchCommand => _clearSearchCommand;
+
+        public ICommand SelectVehicleCommand => _selectVehicleCommand;
+
+        public event EventHandler<VehicleCardViewModel?>? SelectedVehicleChanged;
+
+        public async Task LoadVehiclesAsync(long? preferredSelectionId = null, CancellationToken cancellationToken = default)
+        {
+            System.Diagnostics.Debug.WriteLine("=== LoadVehiclesAsync STARTED ===");
+            _logger.LogInformation("LoadVehiclesAsync started");
+
+            _loadingCts?.Cancel();
+            _loadingCts?.Dispose();
+            _loadingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+            var token = _loadingCts.Token;
+
+            try
+            {
+                IsLoading = true;
+                ErrorMessage = null;
+
+                System.Diagnostics.Debug.WriteLine("Calling VehicleService.GetAllAsync");
+                _logger.LogInformation("Calling VehicleService.GetAllAsync");
+
+                var primaryPhotos = new Dictionary<long, VehiclePhoto?>();
+                List<Vehicle> vehicleList;
+
+                try
+                {
+                    var vehicles = await _vehicleService.GetAllAsync(token).ConfigureAwait(false);
+                    vehicleList = vehicles.ToList();
+                    System.Diagnostics.Debug.WriteLine($"Received {vehicleList.Count} vehicles from service");
+                    _logger.LogInformation("Received {Count} vehicles from service", vehicleList.Count);
+
+                    var ids = vehicleList.Select(v => v.Id).Where(id => id > 0).Distinct().ToList();
+                    _logger.LogInformation("Extracted {IdCount} vehicle IDs", ids.Count);
+
+                    if (ids.Count > 0)
+                    {
+                        try
+                        {
+                            _logger.LogInformation("Fetching primary photos for {IdCount} vehicles", ids.Count);
+                            var photos = await _vehiclePhotoService.GetPrimaryPhotosAsync(ids, token).ConfigureAwait(false);
+                            _logger.LogInformation("Received {PhotoCount} primary photos", photos?.Count ?? 0);
+                            if (photos != null)
+                            {
+                                primaryPhotos = new Dictionary<long, VehiclePhoto?>(photos);
+                            }
+                        }
+                        catch (Exception photoEx)
+                        {
+                            _logger.LogWarning(photoEx, "Failed to load vehicle photos; continuing without images.");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to load vehicles from the database.");
+                    ErrorMessage = "Unable to reach the database. Showing demo vehicles.";
+                    vehicleList = new List<Vehicle>();
+                }
+
+                if (vehicleList.Count == 0)
+                {
+                    _logger.LogWarning("Database returned zero vehicles. Loading sample fleet for display.");
+                    var sample = VehicleSampleFactory.CreateSample();
+                    vehicleList = sample.Vehicles;
+                    primaryPhotos = new Dictionary<long, VehiclePhoto?>(sample.PrimaryPhotos);
+                    ErrorMessage ??= "No vehicles found in the database. Showing demo fleet.";
+                }
+
+                var cards = new List<VehicleCardViewModel>(vehicleList.Count);
+                VehicleCardViewModel? preferredSelection = null;
+
+                _logger.LogInformation("Creating VehicleCardViewModel instances");
+                foreach (var vehicle in vehicleList)
+                {
+                    primaryPhotos.TryGetValue(vehicle.Id, out var photo);
+                    var card = new VehicleCardViewModel(vehicle, photo?.PhotoUrl, photo?.Caption, photo?.IsPrimary ?? false);
+                    cards.Add(card);
+
+                    if (preferredSelectionId.HasValue && vehicle.Id == preferredSelectionId.Value)
+                    {
+                        preferredSelection = card;
+                    }
+                }
+
+            var typeOptions = cards
+                .Select(c => c.CategoryDisplay)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(s => s)
+                .ToList();
+
+            var transmissionOptions = cards
+                .Select(c => c.TransmissionDisplay)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(s => s)
+                .ToList();
+
+                await RunOnUiThreadAsync(() =>
+                {
+                    _logger.LogInformation("Clearing Vehicles collection (current count: {CurrentCount})", Vehicles.Count);
+                    Vehicles.Clear();
+
+                    foreach (var card in cards)
+                    {
+                        Vehicles.Add(card);
+                        _logger.LogDebug("Added vehicle card: {VehicleId} - {DisplayName}", card.Id, card.DisplayName);
+                    }
+
+                    _logger.LogInformation("Vehicles collection now contains {Count} items", Vehicles.Count);
+
+                    UpdateLookupCollection(VehicleTypes, AllTypesOption, typeOptions, SelectedVehicleType, value => SelectedVehicleType = value);
+                    UpdateLookupCollection(TransmissionOptions, AllTransmissionsOption, transmissionOptions, SelectedTransmission, value => SelectedTransmission = value);
+
+                    ApplySortDescriptions();
+                    _vehiclesView.Refresh();
+                    SelectedVehicle = preferredSelection ?? Vehicles.FirstOrDefault();
+                });
+
+                System.Diagnostics.Debug.WriteLine($"=== LoadVehiclesAsync COMPLETED. Vehicle count: {Vehicles.Count}, Selected: {SelectedVehicle?.Id ?? 0} ===");
+                _logger.LogInformation("LoadVehiclesAsync completed. Selected vehicle: {SelectedId}", SelectedVehicle?.Id ?? 0);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Vehicle loading was cancelled");
+                // ignored
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load vehicles");
+                ErrorMessage = "We couldn't load vehicles right now. Please try again.";
+            }
+            finally
+            {
+                IsLoading = false;
+                _loadingCts?.Dispose();
+                _loadingCts = null;
+            }
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+            _loadingCts?.Cancel();
+            _loadingCts?.Dispose();
+            _loadingCts = null;
+        }
+
+        private void UpdateLookupCollection(ObservableCollection<string> target, string defaultOption, IEnumerable<string> values, string currentSelection, Action<string> setSelection)
+        {
+            var previousSelection = currentSelection;
+
+            target.Clear();
+            target.Add(defaultOption);
+
+            foreach (var value in values)
+            {
+                target.Add(value);
+            }
+
+            var matchingSelection = target.FirstOrDefault(option =>
+                string.Equals(option, previousSelection, StringComparison.OrdinalIgnoreCase));
+
+            setSelection(matchingSelection ?? defaultOption);
+        }
+
+        private bool FilterVehicles(object obj)
+        {
+            if (obj is not VehicleCardViewModel vehicle)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(SearchText))
+            {
+                var search = SearchText.Trim();
+                var matchesSearch = vehicle.DisplayName.Contains(search, StringComparison.OrdinalIgnoreCase)
+                                    || vehicle.PlateNumber.Contains(search, StringComparison.OrdinalIgnoreCase)
+                                    || vehicle.CategoryDisplay.Contains(search, StringComparison.OrdinalIgnoreCase)
+                                    || vehicle.FuelDisplay.Contains(search, StringComparison.OrdinalIgnoreCase)
+                                    || vehicle.TransmissionDisplay.Contains(search, StringComparison.OrdinalIgnoreCase);
+                if (!matchesSearch)
+                {
+                    return false;
+                }
+            }
+
+            if (!string.Equals(SelectedVehicleType, AllTypesOption, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.Equals(vehicle.CategoryDisplay, SelectedVehicleType, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+
+            if (!string.Equals(SelectedTransmission, AllTransmissionsOption, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.Equals(vehicle.TransmissionDisplay, SelectedTransmission, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+
+            if (SelectedPriceRange is { IsDefault: false } range)
+            {
+                var rate = vehicle.DailyRate;
+                if (rate < range.Min)
+                {
+                    return false;
+                }
+
+                if (range.Max.HasValue && rate > range.Max.Value)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void ApplySortDescriptions()
+        {
+            using (_vehiclesView.DeferRefresh())
+            {
+                _vehiclesView.SortDescriptions.Clear();
+                if (SelectedSortOption != null)
+                {
+                    foreach (var sortDescription in SelectedSortOption.SortDescriptions)
+                    {
+                        _vehiclesView.SortDescriptions.Add(sortDescription);
+                    }
+                }
+            }
+        }
+
+        private static Task RunOnUiThreadAsync(Action action)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher == null)
+            {
+                action();
+                return Task.CompletedTask;
+            }
+
+            if (dispatcher.CheckAccess())
+            {
+                action();
+                return Task.CompletedTask;
+            }
+
+            return dispatcher.InvokeAsync(action, DispatcherPriority.DataBind).Task;
+        }
+    }
+
+    public class VehicleCardViewModel
+    {
+        public VehicleCardViewModel(Vehicle vehicle, string? primaryPhotoUrl, string? photoCaption, bool isPrimaryPhoto)
+        {
+            Entity = vehicle ?? throw new ArgumentNullException(nameof(vehicle));
+            PrimaryPhotoUrl = primaryPhotoUrl;
+            PrimaryPhotoCaption = photoCaption;
+            HasPrimaryPhoto = isPrimaryPhoto && !string.IsNullOrWhiteSpace(primaryPhotoUrl);
+        }
+
+        public Vehicle Entity { get; }
+
+        public long Id => Entity.Id;
+
+        public string DisplayName => string.Format(CultureInfo.InvariantCulture, "{0} {1} {2}", Entity.ModelYear, Entity.Make, Entity.Model).Trim();
+
+        public string Subtitle => string.Join(" | ", new[] { CategoryDisplay, TransmissionDisplay, FuelDisplay }.Where(s => !string.IsNullOrWhiteSpace(s)));
+
+        public string CategoryDisplay => Entity.Category.ToString();
+
+        public string TransmissionDisplay => Entity.Transmission.ToString();
+
+        public string FuelDisplay => Entity.Fuel.ToString();
+
+        public byte Seats => Entity.Seats;
+
+        public byte Doors => Entity.Doors;
+
+        public string? Color => Entity.Color;
+
+        public decimal DailyRate => Entity.DailyRate;
+
+        public string DailyRateDisplay => Entity.DailyRate.ToString("C", CultureInfo.CurrentCulture);
+
+        public string PlateNumber => Entity.PlateNumber;
+
+        public VehicleStatus Status => Entity.Status;
+
+        public DateTime CreatedAt => Entity.CreatedAt;
+
+        public string? Description => Entity.Description;
+
+        public string? PrimaryPhotoUrl { get; }
+
+        public string? PrimaryPhotoCaption { get; }
+
+        public bool HasPrimaryPhoto { get; }
+    }
+
+    public class PriceRangeOption
+    {
+        public PriceRangeOption(string displayName, decimal min, decimal? max, bool isDefault = false)
+        {
+            DisplayName = displayName;
+            Min = min;
+            Max = max;
+            IsDefault = isDefault;
+        }
+
+        public string DisplayName { get; }
+
+        public decimal Min { get; }
+
+        public decimal? Max { get; }
+
+        public bool IsDefault { get; }
+
+        public override string ToString()
+        {
+            return DisplayName;
+        }
+    }
+
+    public class VehicleSortOption
+    {
+        public VehicleSortOption(string displayName, params SortDescription[] sortDescriptions)
+        {
+            DisplayName = displayName;
+            SortDescriptions = sortDescriptions ?? Array.Empty<SortDescription>();
+        }
+
+        public string DisplayName { get; }
+
+        public IReadOnlyList<SortDescription> SortDescriptions { get; }
+
+        public override string ToString()
+        {
+            return DisplayName;
+        }
+    }
+}
+
+
