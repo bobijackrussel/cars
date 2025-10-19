@@ -22,11 +22,8 @@ namespace CarRentalManagment.ViewModels
     {
         private readonly IVehicleService _vehicleService;
         private readonly IVehiclePhotoService _vehiclePhotoService;
+        private readonly ILocalizationService _localizationService;
         private readonly ILogger<VehicleListViewModel> _logger;
-
-        private const string AllTypesOption = "All Types";
-        private const string AllTransmissionsOption = "All Transmissions";
-        private const string AllPricesOption = "All Prices";
 
         private readonly ICollectionView _vehiclesView;
         private readonly RelayCommand _refreshCommand;
@@ -36,20 +33,26 @@ namespace CarRentalManagment.ViewModels
         private VehicleCardViewModel? _selectedVehicle;
         private string _searchText = string.Empty;
         private VehicleSortOption? _selectedSortOption;
-        private string _selectedVehicleType = AllTypesOption;
-        private string _selectedTransmission = AllTransmissionsOption;
+        private string _selectedVehicleType = string.Empty;
+        private string _selectedTransmission = string.Empty;
         private PriceRangeOption? _selectedPriceRange;
         private bool _isLoading;
         private string? _errorMessage;
         private CancellationTokenSource? _loadingCts;
 
+        private string _allTypesOption = string.Empty;
+        private string _allTransmissionsOption = string.Empty;
+        private string _allPricesOption = string.Empty;
+
         public VehicleListViewModel(
             IVehicleService vehicleService,
             IVehiclePhotoService vehiclePhotoService,
+            ILocalizationService localizationService,
             ILogger<VehicleListViewModel> logger)
         {
             _vehicleService = vehicleService;
             _vehiclePhotoService = vehiclePhotoService;
+            _localizationService = localizationService;
             _logger = logger;
 
             Vehicles = new ObservableCollection<VehicleCardViewModel>();
@@ -57,28 +60,9 @@ namespace CarRentalManagment.ViewModels
             _vehiclesView.Filter = FilterVehicles;
             System.Diagnostics.Debug.WriteLine("VehicleListViewModel constructor - Vehicles collection initialized");
 
-            SortOptions = new ObservableCollection<VehicleSortOption>
-            {
-                new("Recommended", new SortDescription(nameof(VehicleCardViewModel.DisplayName), ListSortDirection.Ascending)),
-                new("Daily Rate (Low to High)", new SortDescription(nameof(VehicleCardViewModel.DailyRate), ListSortDirection.Ascending)),
-                new("Daily Rate (High to Low)", new SortDescription(nameof(VehicleCardViewModel.DailyRate), ListSortDirection.Descending)),
-                new("Newest Added", new SortDescription(nameof(VehicleCardViewModel.CreatedAt), ListSortDirection.Descending))
-            };
+            _localizationService.LanguageChanged += OnLanguageChanged;
 
-            _selectedSortOption = SortOptions.FirstOrDefault();
-
-            VehicleTypes.Add(AllTypesOption);
-            TransmissionOptions.Add(AllTransmissionsOption);
-
-            PriceRanges.Add(new PriceRangeOption(AllPricesOption, 0m, null, isDefault: true));
-            PriceRanges.Add(new PriceRangeOption("$0 - $50", 0m, 50m));
-            PriceRanges.Add(new PriceRangeOption("$51 - $100", 51m, 100m));
-            PriceRanges.Add(new PriceRangeOption("$101 - $200", 101m, 200m));
-            PriceRanges.Add(new PriceRangeOption("$201+", 201m, null));
-
-            _selectedVehicleType = AllTypesOption;
-            _selectedTransmission = AllTransmissionsOption;
-            SelectedPriceRange = PriceRanges.FirstOrDefault();
+            UpdateLocalization(isInitial: true);
 
             _refreshCommand = new RelayCommand(async _ => await LoadVehiclesAsync(), _ => !IsLoading);
             _clearSearchCommand = new RelayCommand(_ => SearchText = string.Empty, _ => !IsLoading && !string.IsNullOrWhiteSpace(SearchText));
@@ -97,7 +81,7 @@ namespace CarRentalManagment.ViewModels
 
         public ICollectionView VehiclesView => _vehiclesView;
 
-        public ObservableCollection<VehicleSortOption> SortOptions { get; }
+        public ObservableCollection<VehicleSortOption> SortOptions { get; } = new();
 
         public ObservableCollection<string> VehicleTypes { get; } = new();
 
@@ -204,6 +188,159 @@ namespace CarRentalManagment.ViewModels
         public ICommand SelectVehicleCommand => _selectVehicleCommand;
 
         public event EventHandler<VehicleCardViewModel?>? SelectedVehicleChanged;
+
+        private void UpdateLocalization(bool isInitial = false)
+        {
+            var previousTypes = _allTypesOption;
+            var previousTransmissions = _allTransmissionsOption;
+            var previousPrices = _allPricesOption;
+            var previousSortKey = GetSortKey(SelectedSortOption);
+            var previousPriceSelection = SelectedPriceRange;
+
+            _allTypesOption = _localizationService.GetString("Vehicles_Filter_AllTypes");
+            _allTransmissionsOption = _localizationService.GetString("Vehicles_Filter_AllTransmissions");
+            _allPricesOption = _localizationService.GetString("Vehicles_Filter_AllPrices");
+
+            UpdateSortOptions(previousSortKey);
+
+            UpdateDefaultOption(VehicleTypes, previousTypes, _allTypesOption, () => SelectedVehicleType, value => SelectedVehicleType = value, isInitial);
+            UpdateDefaultOption(TransmissionOptions, previousTransmissions, _allTransmissionsOption, () => SelectedTransmission, value => SelectedTransmission = value, isInitial);
+
+            UpdatePriceRanges(previousPriceSelection);
+
+            if (isInitial)
+            {
+                SelectedVehicleType = _allTypesOption;
+                SelectedTransmission = _allTransmissionsOption;
+            }
+
+            _vehiclesView.Refresh();
+        }
+
+        private void UpdateSortOptions(string? previousSortKey)
+        {
+            var options = BuildSortOptions().ToList();
+
+            SortOptions.Clear();
+            foreach (var option in options)
+            {
+                SortOptions.Add(option);
+            }
+
+            SelectedSortOption = SortOptions.FirstOrDefault(o => GetSortKey(o) == previousSortKey) ?? SortOptions.FirstOrDefault();
+        }
+
+        private IEnumerable<VehicleSortOption> BuildSortOptions()
+        {
+            yield return new VehicleSortOption(
+                _localizationService.GetString("Vehicles_Sort_Recommended"),
+                new SortDescription(nameof(VehicleCardViewModel.DisplayName), ListSortDirection.Ascending));
+            yield return new VehicleSortOption(
+                _localizationService.GetString("Vehicles_Sort_DailyRateLowHigh"),
+                new SortDescription(nameof(VehicleCardViewModel.DailyRate), ListSortDirection.Ascending));
+            yield return new VehicleSortOption(
+                _localizationService.GetString("Vehicles_Sort_DailyRateHighLow"),
+                new SortDescription(nameof(VehicleCardViewModel.DailyRate), ListSortDirection.Descending));
+            yield return new VehicleSortOption(
+                _localizationService.GetString("Vehicles_Sort_Newest"),
+                new SortDescription(nameof(VehicleCardViewModel.CreatedAt), ListSortDirection.Descending));
+        }
+
+        private static string GetSortKey(VehicleSortOption? option)
+        {
+            if (option == null)
+            {
+                return string.Empty;
+            }
+
+            return string.Join("|", option.SortDescriptions.Select(sd => $"{sd.PropertyName}:{(int)sd.Direction}"));
+        }
+
+        private void UpdateDefaultOption(
+            ObservableCollection<string> target,
+            string previousValue,
+            string newValue,
+            Func<string> getSelection,
+            Action<string> setSelection,
+            bool isInitial)
+        {
+            var selection = getSelection();
+            var shouldSelectDefault = isInitial
+                                       || string.IsNullOrWhiteSpace(selection)
+                                       || string.Equals(selection, previousValue, StringComparison.OrdinalIgnoreCase);
+
+            if (target.Count == 0)
+            {
+                target.Add(newValue);
+            }
+            else
+            {
+                var index = !string.IsNullOrEmpty(previousValue) ? target.IndexOf(previousValue) : 0;
+                if (index < 0)
+                {
+                    index = 0;
+                }
+
+                if (index < target.Count)
+                {
+                    target[index] = newValue;
+                }
+                else
+                {
+                    target.Insert(0, newValue);
+                }
+            }
+
+            if (shouldSelectDefault)
+            {
+                setSelection(newValue);
+            }
+        }
+
+        private void UpdatePriceRanges(PriceRangeOption? previousSelection)
+        {
+            var ranges = BuildPriceRanges().ToList();
+
+            PriceRanges.Clear();
+            foreach (var range in ranges)
+            {
+                PriceRanges.Add(range);
+            }
+
+            if (previousSelection != null)
+            {
+                SelectedPriceRange = PriceRanges.FirstOrDefault(r => PriceRangeEquals(r, previousSelection));
+            }
+
+            SelectedPriceRange ??= PriceRanges.FirstOrDefault(r => r.IsDefault);
+        }
+
+        private IEnumerable<PriceRangeOption> BuildPriceRanges()
+        {
+            yield return new PriceRangeOption(_allPricesOption, 0m, null, isDefault: true);
+            yield return new PriceRangeOption(_localizationService.GetString("Vehicles_PriceRange_0_50"), 0m, 50m);
+            yield return new PriceRangeOption(_localizationService.GetString("Vehicles_PriceRange_51_100"), 51m, 100m);
+            yield return new PriceRangeOption(_localizationService.GetString("Vehicles_PriceRange_101_200"), 101m, 200m);
+            yield return new PriceRangeOption(_localizationService.GetString("Vehicles_PriceRange_201_Plus"), 201m, null);
+        }
+
+        private static bool PriceRangeEquals(PriceRangeOption left, PriceRangeOption right)
+        {
+            return left.Min == right.Min && Nullable.Equals(left.Max, right.Max);
+        }
+
+        private void OnLanguageChanged(object? sender, CultureInfo e)
+        {
+            var dispatcher = Application.Current?.Dispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                dispatcher.Invoke(() => UpdateLocalization());
+            }
+            else
+            {
+                UpdateLocalization();
+            }
+        }
 
         public async Task LoadVehiclesAsync(long? preferredSelectionId = null, CancellationToken cancellationToken = default)
         {
@@ -314,8 +451,8 @@ namespace CarRentalManagment.ViewModels
 
                     _logger.LogInformation("Vehicles collection now contains {Count} items", Vehicles.Count);
 
-                    UpdateLookupCollection(VehicleTypes, AllTypesOption, typeOptions, SelectedVehicleType, value => SelectedVehicleType = value);
-                    UpdateLookupCollection(TransmissionOptions, AllTransmissionsOption, transmissionOptions, SelectedTransmission, value => SelectedTransmission = value);
+                    UpdateLookupCollection(VehicleTypes, _allTypesOption, typeOptions, SelectedVehicleType, value => SelectedVehicleType = value);
+                    UpdateLookupCollection(TransmissionOptions, _allTransmissionsOption, transmissionOptions, SelectedTransmission, value => SelectedTransmission = value);
 
                     ApplySortDescriptions();
                     _vehiclesView.Refresh();
@@ -346,6 +483,7 @@ namespace CarRentalManagment.ViewModels
         public override void Dispose()
         {
             base.Dispose();
+            _localizationService.LanguageChanged -= OnLanguageChanged;
             _loadingCts?.Cancel();
             _loadingCts?.Dispose();
             _loadingCts = null;
@@ -390,7 +528,7 @@ namespace CarRentalManagment.ViewModels
                 }
             }
 
-            if (!string.Equals(SelectedVehicleType, AllTypesOption, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(SelectedVehicleType, _allTypesOption, StringComparison.OrdinalIgnoreCase))
             {
                 if (!string.Equals(vehicle.CategoryDisplay, SelectedVehicleType, StringComparison.OrdinalIgnoreCase))
                 {
@@ -398,7 +536,7 @@ namespace CarRentalManagment.ViewModels
                 }
             }
 
-            if (!string.Equals(SelectedTransmission, AllTransmissionsOption, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(SelectedTransmission, _allTransmissionsOption, StringComparison.OrdinalIgnoreCase))
             {
                 if (!string.Equals(vehicle.TransmissionDisplay, SelectedTransmission, StringComparison.OrdinalIgnoreCase))
                 {
